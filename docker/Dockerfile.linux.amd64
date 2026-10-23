@@ -1,4 +1,10 @@
-FROM amd64/golang:1.14-alpine AS build
+FROM harness0.harness.io/oci/docker_artifacts/hhi/harnessos-alpine:1 AS hhi-ca-certificates
+RUN apk add --no-cache 'ca-certificates>=20261020-r0'
+
+FROM harness0.harness.io/oci/docker_artifacts/hhi/go:1.26.10 AS hhi-go-toolchain-0
+FROM harness0.harness.io/oci/docker_artifacts/hhi/harnessos-alpine:1 AS build
+COPY --from=hhi-go-toolchain-0 /usr/lib/go /usr/lib/go
+ENV PATH=/usr/lib/go/bin:$PATH GOPATH=/go GOTOOLCHAIN=local
 
 RUN apk add --no-cache git build-base && \
   git clone --branch v0.70.0 https://github.com/gohugoio/hugo.git && \
@@ -23,3 +29,6 @@ COPY --from=build /tmp/hugo-extended /bin/hugo-extended
 
 ADD release/linux/amd64/drone-hugo /bin/
 ENTRYPOINT ["/bin/drone-hugo"]
+
+# Supply the incident-patched system roots from the HHI package.
+COPY --from=hhi-ca-certificates /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
