@@ -1,8 +1,5 @@
-FROM harness0.harness.io/oci/docker_artifacts/hhi/harnessos-alpine:1 AS hhi-ca-certificates
-RUN apk add --no-cache 'ca-certificates>=20261020-r0'
-
-FROM harness0.harness.io/oci/docker_artifacts/hhi/go:1.26.10 AS hhi-go-toolchain-0
-FROM harness0.harness.io/oci/docker_artifacts/hhi/harnessos-alpine:1 AS build
+FROM harness0.harness.io/oci/docker_artifacts/hhi/go:1.26.10@sha256:718fddf012b3a305e936ae9964e5a642036bcb7b4c6c0786e2f78f238d637db8 AS hhi-go-toolchain-0
+FROM harness0.harness.io/oci/docker_artifacts/hhi/harnessos-alpine:1@sha256:290a37c85b4284d2c11fa0778e5da79643d912a1f5a57d6f701b77644503b7e7 AS build
 COPY --from=hhi-go-toolchain-0 /usr/lib/go /usr/lib/go
 ENV PATH=/usr/lib/go/bin:$PATH GOPATH=/go GOTOOLCHAIN=local
 
@@ -12,16 +9,14 @@ RUN apk add --no-cache git build-base && \
   CGO_ENABLED=0 go build -ldflags "-s -w -X github.com/gohugoio/hugo/common/hugo.buildDate=$(date +%Y-%m-%dT%H:%M:%SZ) -X github.com/gohugoio/hugo/common/hugo.commitHash=$(git rev-parse --short HEAD)" -o /tmp/hugo . && \
   CGO_ENABLED=1 go build -tags extended -ldflags "-s -w -X github.com/gohugoio/hugo/common/hugo.buildDate=$(date +%Y-%m-%dT%H:%M:%SZ) -X github.com/gohugoio/hugo/common/hugo.commitHash=$(git rev-parse --short HEAD)" -o /tmp/hugo-extended
 
-FROM plugins/base:linux-arm64
-COPY --from=hhi-ca-certificates /etc/ssl/certs/ca-certificates.crt /etc/hhi/certs/ca-certificates.crt
-ENV SSL_CERT_FILE=/etc/hhi/certs/ca-certificates.crt SSL_CERT_DIR=/etc/hhi/certs
+FROM harness0.harness.io/oci/docker_artifacts/hhi/harnessos-alpine:1@sha256:290a37c85b4284d2c11fa0778e5da79643d912a1f5a57d6f701b77644503b7e7
 
 LABEL maintainer="Drone.IO Community <drone-dev@googlegroups.com>" \
   org.label-schema.name="Drone Hugo" \
   org.label-schema.vendor="Drone.IO Community" \
   org.label-schema.schema-version="1.0"
 
-RUN apk --no-cache add git libc6-compat libstdc++
+RUN apk --no-cache add git libstdc++
 
 ENV PLUGIN_HUGO_ARCH=arm64
 ENV PLUGIN_HUGO_SHIPPED_VERSION=0.70.0
@@ -31,6 +26,3 @@ COPY --from=build /tmp/hugo-extended /bin/hugo-extended
 
 ADD release/linux/arm64/drone-hugo /bin/
 ENTRYPOINT ["/bin/drone-hugo"]
-
-# Supply the incident-patched system roots from the HHI package.
-COPY --from=hhi-ca-certificates /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
