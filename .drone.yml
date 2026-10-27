@@ -134,7 +134,7 @@ pool:
 
 steps:
   - name: environment
-    image: golang:1.19-windowsservercore-1809@sha256:5f5fbdddcb00c517f04e0e28da80339c7f842f477b3d3bded7f6f7c82889a507
+    image: golang:1.19
     pull: always
     environment:
       CGO_ENABLED: "0"
@@ -143,7 +143,7 @@ steps:
       - go version
       - go env
   - name: build
-    image: golang:1.19-windowsservercore-1809@sha256:5f5fbdddcb00c517f04e0e28da80339c7f842f477b3d3bded7f6f7c82889a507
+    image: golang:1.19
     environment:
       CGO_ENABLED: "0"
     commands:
