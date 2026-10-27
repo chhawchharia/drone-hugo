@@ -1,8 +1,6 @@
 module github.com/drone-plugins/drone-hugo
 
-go 1.19
-
-toolchain go1.26.10
+go 1.26.10
 
 require (
 	github.com/pkg/errors v0.9.1

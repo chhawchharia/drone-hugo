@@ -1,22 +1,22 @@
-FROM harness0.harness.io/oci/docker_artifacts/hhi/go:1.26.10@sha256:718fddf012b3a305e936ae9964e5a642036bcb7b4c6c0786e2f78f238d637db8 AS hhi-go-toolchain-0
-FROM harness0.harness.io/oci/docker_artifacts/hhi/harnessos-alpine:1@sha256:290a37c85b4284d2c11fa0778e5da79643d912a1f5a57d6f701b77644503b7e7 AS build
-COPY --from=hhi-go-toolchain-0 /usr/lib/go /usr/lib/go
-ENV PATH=/usr/lib/go/bin:$PATH GOPATH=/go GOTOOLCHAIN=local
+FROM golang:1.26.10-alpine@sha256:a2012b4a1d1f9f7e9f44e0d39b805a901e856b1dd80b4e6ee4338db547050308 AS go-toolchain
+FROM plugins/base:linux-amd64@sha256:eebce77ace858799687e65220223fc0fe94b3c87d19dafaf2b8959960f632ce7 AS build
+COPY --from=go-toolchain /usr/local/go /usr/local/go
+ENV PATH=/usr/local/go/bin:$PATH GOPATH=/go GOTOOLCHAIN=local
 
-RUN apk add --no-cache git build-base && \
+RUN apk add --no-cache 'ca-certificates>=20261020-r0' 'ca-certificates-bundle>=20261020-r0' git build-base && \
   git clone --branch v0.70.0 https://github.com/gohugoio/hugo.git && \
   cd hugo/ && \
   CGO_ENABLED=0 go build -ldflags "-s -w -X github.com/gohugoio/hugo/common/hugo.buildDate=$(date +%Y-%m-%dT%H:%M:%SZ) -X github.com/gohugoio/hugo/common/hugo.commitHash=$(git rev-parse --short HEAD)" -o /tmp/hugo . && \
   CGO_ENABLED=1 go build -tags extended -ldflags "-s -w -X github.com/gohugoio/hugo/common/hugo.buildDate=$(date +%Y-%m-%dT%H:%M:%SZ) -X github.com/gohugoio/hugo/common/hugo.commitHash=$(git rev-parse --short HEAD)" -o /tmp/hugo-extended
 
-FROM harness0.harness.io/oci/docker_artifacts/hhi/harnessos-alpine:1@sha256:290a37c85b4284d2c11fa0778e5da79643d912a1f5a57d6f701b77644503b7e7
+FROM plugins/base:linux-amd64@sha256:eebce77ace858799687e65220223fc0fe94b3c87d19dafaf2b8959960f632ce7
 
 LABEL maintainer="Drone.IO Community <drone-dev@googlegroups.com>" \
   org.label-schema.name="Drone Hugo" \
   org.label-schema.vendor="Drone.IO Community" \
   org.label-schema.schema-version="1.0"
 
-RUN apk --no-cache add git libstdc++
+RUN apk --no-cache add 'ca-certificates>=20261020-r0' 'ca-certificates-bundle>=20261020-r0' git libc6-compat libstdc++
 
 ENV PLUGIN_HUGO_ARCH=64bit
 ENV PLUGIN_HUGO_SHIPPED_VERSION=0.70.0
